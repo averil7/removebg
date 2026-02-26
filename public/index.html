@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hapus Background Gambar</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header { text-align: center; margin-bottom: 2.5rem; }
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    header p { color: #9999bb; font-size: 0.95rem; }
+
+    .card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 1.25rem;
+      padding: 2rem;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    .dropzone {
+      border: 2px dashed #3a3a6a;
+      border-radius: 1rem;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      background: #12122a;
+      position: relative;
+    }
+    .dropzone:hover, .dropzone.drag-over { border-color: #a78bfa; background: #1a1535; }
+    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .dropzone-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .dropzone h3 { font-size: 1.1rem; margin-bottom: 0.4rem; color: #c0c0e0; }
+    .dropzone p { font-size: 0.85rem; color: #6666aa; }
+
+    /* Preview area — hidden by default */
+    .preview-area {
+      display: none;
+      margin-top: 1.5rem;
+      gap: 1rem;
+    }
+    /* Only original shown (1 column, centered) */
+    .preview-area.show-one {
+      display: grid;
+      grid-template-columns: 1fr;
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    /* Both shown (2 columns) */
+    .preview-area.show-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (max-width: 500px) {
+      .preview-area.show-two { grid-template-columns: 1fr; }
+      .preview-area.show-one { max-width: 100%; }
+    }
+
+    .preview-box {
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 1px solid #2a2a4a;
+      background: #12122a;
+    }
+    .preview-box.hidden { display: none; }
+
+    .preview-box-label {
+      font-size: 0.75rem;
+      color: #7777aa;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #2a2a4a;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .preview-box img {
+      width: 100%;
+      display: block;
+      object-fit: contain;
+      max-height: 280px;
+      background: repeating-conic-gradient(#1e1e3a 0% 25%, #12122a 0% 50%) 0 0 / 16px 16px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.75rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      color: white;
+      width: 100%;
+      justify-content: center;
+      margin-top: 1.25rem;
+    }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-download {
+      background: #16a34a;
+      color: white;
+      width: 100%;
+      justify-content: center;
+      margin-top: 1rem;
+      text-decoration: none;
+    }
+    .btn-download:hover { background: #15803d; }
+
+    .btn-reset {
+      background: transparent;
+      border: 1px solid #3a3a6a;
+      color: #9999cc;
+      margin-top: 0.5rem;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-reset:hover { border-color: #a78bfa; color: #a78bfa; }
+
+    .status {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.6rem;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .status.show { display: flex; align-items: center; gap: 0.5rem; }
+    .status.loading { background: #1e1e40; color: #a78bfa; }
+    .status.error { background: #2a1010; color: #f87171; border: 1px solid #ef4444; }
+    .status.success { background: #0f2a1a; color: #4ade80; border: 1px solid #22c55e; }
+
+    .timer { margin-top: 0.75rem; font-size: 0.85rem; color: #6666aa; text-align: center; }
+    .timer span { color: #f59e0b; font-weight: 600; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .info-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+      justify-content: center;
+    }
+    .badge {
+      background: #1a1a3a;
+      border: 1px solid #2a2a5a;
+      border-radius: 2rem;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.8rem;
+      color: #8888cc;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>✂️ Hapus Background</h1>
+  <p>Upload gambar — background dihapus otomatis dengan AI</p>
+</header>
+
+<div class="card">
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" />
+    <div class="dropzone-icon">🖼️</div>
+    <h3>Klik atau seret gambar ke sini</h3>
+    <p>JPG, PNG, WebP · Maks 10 MB</p>
+  </div>
+
+  <div class="preview-area" id="previewArea">
+    <div class="preview-box" id="boxOriginal">
+      <div class="preview-box-label">Asli</div>
+      <img id="originalPreview" src="" alt="Original" />
+    </div>
+    <div class="preview-box hidden" id="boxResult">
+      <div class="preview-box-label">Hasil</div>
+      <img id="resultPreview" src="" alt="Result" />
+    </div>
+  </div>
+
+  <div class="status loading" id="statusLoading">
+    <div class="spinner"></div>
+    <span>Menghapus background, mohon tunggu...</span>
+  </div>
+  <div class="status error" id="statusError">
+    <span>❌</span><span id="errorMsg"></span>
+  </div>
+  <div class="status success" id="statusSuccess">
+    <span>✅</span><span>Background berhasil dihapus!</span>
+  </div>
+
+  <button class="btn btn-primary" id="processBtn" disabled onclick="processImage()">
+    ✨ Hapus Background
+  </button>
+
+  <a class="btn btn-download" id="downloadBtn" href="#" style="display:none" download>
+    ⬇️ Download Hasil (PNG)
+  </a>
+
+  <button class="btn btn-reset" id="resetBtn" style="display:none" onclick="reset()">
+    🔄 Upload Gambar Baru
+  </button>
+
+  <div class="timer" id="timer" style="display:none">
+    File akan dihapus dalam <span id="countdown">20:00</span>
+  </div>
+</div>
+
+<div class="info-row">
+  <span class="badge">⏱️ Disimpan 20 menit</span>
+  <span class="badge">🔒 Otomatis dihapus</span>
+  <span class="badge">🆓 Gratis</span>
+  <span class="badge">🤖 Powered by AI</span>
+</div>
+
+<script>
+  let selectedFile = null;
+  let countdownInterval = null;
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const processBtn = document.getElementById('processBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const previewArea = document.getElementById('previewArea');
+  const boxOriginal = document.getElementById('boxOriginal');
+  const boxResult = document.getElementById('boxResult');
+  const originalPreview = document.getElementById('originalPreview');
+  const resultPreview = document.getElementById('resultPreview');
+  const statusLoading = document.getElementById('statusLoading');
+  const statusError = document.getElementById('statusError');
+  const statusSuccess = document.getElementById('statusSuccess');
+  const errorMsg = document.getElementById('errorMsg');
+  const timerEl = document.getElementById('timer');
+  const countdown = document.getElementById('countdown');
+
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      originalPreview.src = e.target.result;
+      // Hanya tampilkan gambar asli, sembunyikan box hasil
+      previewArea.className = 'preview-area show-one';
+      boxResult.classList.add('hidden');
+      resultPreview.src = '';
+    };
+    reader.readAsDataURL(file);
+    processBtn.disabled = false;
+    hideStatuses();
+    downloadBtn.style.display = 'none';
+    resetBtn.style.display = 'none';
+    timerEl.style.display = 'none';
+    if (countdownInterval) clearInterval(countdownInterval);
+  }
+
+  async function processImage() {
+    if (!selectedFile) return;
+    processBtn.disabled = true;
+    hideStatuses();
+    statusLoading.classList.add('show');
+
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+
+    try {
+      const res = await fetch('/api/remove-bg', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      statusLoading.classList.remove('show');
+
+      if (!res.ok || !data.success) {
+        showError(data.error || 'Terjadi kesalahan');
+        processBtn.disabled = false;
+        return;
+      }
+
+      // Tampilkan hasil — expand ke 2 kolom dan munculkan box hasil
+      resultPreview.src = data.previewBase64;
+      boxResult.classList.remove('hidden');
+      previewArea.className = 'preview-area show-two';
+
+      statusSuccess.classList.add('show');
+      downloadBtn.href = data.downloadUrl;
+      downloadBtn.style.display = 'flex';
+      resetBtn.style.display = 'flex';
+
+      startCountdown(data.expiresIn);
+
+    } catch (e) {
+      statusLoading.classList.remove('show');
+      showError('Gagal terhubung ke server');
+      processBtn.disabled = false;
+    }
+  }
+
+  function startCountdown(seconds) {
+    timerEl.style.display = 'block';
+    let remaining = seconds;
+    function update() {
+      const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+      const s = (remaining % 60).toString().padStart(2, '0');
+      countdown.textContent = `${m}:${s}`;
+      if (remaining <= 0) {
+        clearInterval(countdownInterval);
+        timerEl.innerHTML = '⚠️ File sudah kadaluarsa — silakan proses ulang';
+        downloadBtn.style.display = 'none';
+      }
+      remaining--;
+    }
+    update();
+    countdownInterval = setInterval(update, 1000);
+  }
+
+  function reset() {
+    selectedFile = null;
+    fileInput.value = '';
+    previewArea.className = 'preview-area';
+    boxResult.classList.add('hidden');
+    originalPreview.src = '';
+    resultPreview.src = '';
+    processBtn.disabled = true;
+    downloadBtn.style.display = 'none';
+    resetBtn.style.display = 'none';
+    timerEl.style.display = 'none';
+    hideStatuses();
+    if (countdownInterval) clearInterval(countdownInterval);
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    statusError.classList.add('show');
+  }
+
+  function hideStatuses() {
+    statusLoading.classList.remove('show');
+    statusError.classList.remove('show');
+    statusSuccess.classList.remove('show');
+  }
+</script>
+</body>
+</html>
